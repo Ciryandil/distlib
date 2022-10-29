@@ -2,12 +2,15 @@
 
 class Message {
     private:
-
-        std::string receiverId;
+    
+        std::string buffer;
 
     public:
+        
+        Message(char *msg);
 
-        virtual void print() = 0;
+        char*  getMessage();
 
+        void setMessage(char *msg);
 
 };

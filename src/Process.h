@@ -5,12 +5,11 @@
 
 class Process {
 
-    private:
+    protected:
     
         std::set<Process*> out_nbrs;
         std::set<Process*> in_nbrs;
         std::vector<Message*> inMessages;
-        std::vector<Message*> outMessages;
 
     public:
 

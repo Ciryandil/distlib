@@ -15,6 +15,8 @@ class Graph {
 
         void removeProcess(int idx);
 
+        void connect(int idx1, int idx2);
+
         void simRound();
-        
+
 };

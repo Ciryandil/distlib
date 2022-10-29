@@ -18,6 +18,18 @@ void Graph::removeProcess(int idx) {
     delete(toDelete);
 }
 
+void Graph::connect(int idx1, int idx2) {
+
+    Process *from = processes[idx1];
+    Process *to = processes[idx2];
+    
+    if(to == nullptr || from == nullptr)
+        return;
+    
+    from->addNeighbour(to);
+
+}
+
 void Graph::simRound() {         
 
     for(std::map<int, Process*>::iterator itr = processes.begin(); itr != processes.end(); ++itr) {
