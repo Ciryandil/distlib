@@ -1,19 +1,39 @@
 #include <iostream>
 #include <src/Graph.h>
+#include <algorithm>
+#include <string>
 
-struct UID {
+enum MessageType {SEARCH, DECLARATION};
 
-    public:
+class LeaderSearch {
+
+    private:
+
+        MessageType messageType; 
 
         int uid;
 
-        UID(int uid) {
+        int senderNode;
+
+    public:
+
+        LeaderSearch(int uid) {
 
             this->uid = uid;
+            this->senderNode = -1;
+            this->messageType = SEARCH;
 
         }
 
-        int getUID() {
+        LeaderSearch(int uid, int senderNode, MessageType messageType) {
+
+            this->uid = uid;
+            this->senderNode = senderNode;
+            this->messageType = messageType;
+
+        }
+
+        int getUID() const {
 
             return uid;
 
@@ -25,9 +45,45 @@ struct UID {
 
         }
 
-        friend std::ostream& operator<<(std::ostream &os, const UID &uid) {
+        MessageType getMessageType() const {
 
-            os<<"UID : %d\n", uid.uid;
+            return messageType;
+
+        }
+
+        void setMessageType(MessageType messageType) {
+
+            this->messageType = messageType;
+
+        }
+
+        int getSenderNode() const {
+
+            return senderNode;
+
+        }
+
+        void setSenderNode(int senderNode) {
+
+            this->senderNode = senderNode;
+
+        }
+
+        friend std::ostream& operator<<(std::ostream &os, const LeaderSearch &msg) {
+            
+            std::string message;
+            if(msg.getMessageType() == SEARCH) {
+
+                message = "[ MESSAGE TYPE: SEARCH | UID: " + std::to_string(msg.getUID()) + " ] ";
+
+            } else {
+
+                message = "[ MESSAGE TYPE: DECLARATION | LEADER UID: " + std::to_string(msg.getUID()) 
+                            + " | LEADER NODE: " + std::to_string(msg.getSenderNode()) + " ] ";
+
+            }
+
+            os<<message;
             return os;
         }
 
@@ -40,6 +96,8 @@ class LCRProcess: public Process {
         int uid;
         int maxUID;
         bool leader;
+        bool seenLeader;
+        LeaderSearch *leaderDeclaration;
 
     public:
 
@@ -48,21 +106,37 @@ class LCRProcess: public Process {
             this->uid = uid;
             this->maxUID = uid;
             this->leader = false;
+            this->active = true;
+            this->seenLeader = false;
+            this->leaderDeclaration = nullptr;
 
         }
 
         void sendMessages() {
 
-            if(leader == true) {
+            if(leader || seenLeader) {
+
+                for(Process *p : out_nbrs) {
+                    
+                    std::cout<<"Sending Leader Declaration to neighbour at index "<<p->getNode()<<"...\n";
+                    std::cout<<"Declaration Message: "<<*leaderDeclaration<<"\n\n";
+                    void *msg = static_cast<void*>(leaderDeclaration);
+                    p->receiveMessage(msg);
+
+                }
+
+                active = false;
                 return;
-            } 
-            UID *maxSeen = new UID(maxUID);
+
+            }
+
+            LeaderSearch *maxSeen = new LeaderSearch(maxUID);
             
             for(Process *p : out_nbrs) {
-
-                    char *msg = reinterpret_cast<char*>(maxSeen) ;
-                    Message *m = new Message(msg);
-                    p->receiveMessage(m);
+            
+                    std::cout<<"Sending message "<<*maxSeen<<" to neighbour at index "<<p->getNode()<<"...\n\n";
+                    void *msg = static_cast<void*>(maxSeen);
+                    p->receiveMessage(msg);
 
             }
 
@@ -70,27 +144,45 @@ class LCRProcess: public Process {
 
         void transition() {
 
-            if(leader == true) {
-                return;
+            int maxInUID = -1;
+            while(!inMessages.empty()) {
+
+                void *msg = inMessages.front();
+                inMessages.pop();
+                LeaderSearch *nbrMsg = static_cast<LeaderSearch*>(msg);
+                std::cout<<"Received message: "<<*nbrMsg<<"\n\n";
+
+                if(nbrMsg->getMessageType() == DECLARATION) {
+
+                    leaderDeclaration = nbrMsg;
+                    seenLeader = true;
+                    std::cout<<"Received Leader Declaration from Process with UID: "<<nbrMsg->getUID()<<" located at node "<<nbrMsg->getSenderNode()<<"\n\n";
+
+                    return;
+
+                } 
+                int uidval = nbrMsg->getUID();
+                maxInUID = std::max(maxInUID, uidval);
+                delete(nbrMsg);
+                
             }
+            if(maxInUID > maxUID) {
 
-            for(Message *m : inMessages) {
+                maxUID = maxInUID;
+                std::cout<<"Largest seen UID changes to "<<maxUID<<"\n\n";
 
-                char *msg = m->getMessage();
-                UID *nbrUID = reinterpret_cast<UID*>(msg); 
-                int uidval = nbrUID->getUID();
-                if(uidval > maxUID) {
+            }
+            
+            else if(maxInUID == uid) {
 
-                    maxUID = uidval;
+                leader = true;
+                std::cout<<"Received own UID. Process at node "<<node<<" declares itself leader\n\n";
+                leaderDeclaration = new LeaderSearch(this->uid, this->node, DECLARATION);
+                
+            }
+            else {
 
-                }
-
-                else if(uidval == uid) {
-
-                    leader = true;
-                    std::cout<<"Process with UID "<<uid<<" declares itself leader\n";
-
-                }
+                std::cout<<"Largest seen UID remains "<<maxUID<<"\n\n";
 
             }
 
@@ -101,26 +193,23 @@ class LCRProcess: public Process {
 int main() {
 
     Graph ringGraph;
-
-    for(int i = 0; i < 10; i++) {
+    int numProcesses = 2;
+    for(int i = 0; i < numProcesses; i++) {
 
         Process *p = new LCRProcess(rand());
         ringGraph.addProcess(p);
 
     }
 
-    for(int i = 0; i < 10; i++) {
+    for(int i = 0; i < numProcesses; i++) {
 
-        ringGraph.connect(i, (i+1) % 10);
-
-    }
-
-    for(int i = 0; i <= 10; i++) {
-
-        std::cout<<"Round "<<i<<"\n";
-        ringGraph.simRound();
+        ringGraph.connect(i, (i+1) % numProcesses);
 
     }
+
+        
+        ringGraph.simulate();
+
 
     return 0;
 

@@ -3,7 +3,7 @@
 
 class Graph {
     
-    private:
+    protected:
 
         std::map<int, Process*> processes;
 
@@ -17,6 +17,6 @@ class Graph {
 
         void connect(int idx1, int idx2);
 
-        void simRound();
+        virtual void simulate();
 
 };

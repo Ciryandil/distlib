@@ -10,6 +10,24 @@ Process::~Process() {
 
 }
 
+int Process::getNode() {
+
+    return node;
+
+}
+
+void Process::setNode(int node) {
+
+    this->node = node;
+
+}
+
+bool Process::isActive() {
+
+    return active;
+    
+}
+
 void Process::addNeighbour(Process *nbr) {
     
     out_nbrs.insert(nbr);
@@ -23,10 +41,11 @@ void Process::removeNeighbour(Process *nbr) {
 
 }
 
-void Process::receiveMessage(Message *message) {
+void Process::receiveMessage(void *message) {
 
-    inMessages.push_back(message);
+    inMessages.push(message);
     
 }
+
 
      

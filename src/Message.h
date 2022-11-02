@@ -3,14 +3,14 @@
 class Message {
     private:
     
-        std::string buffer;
+        void *ptr;
 
     public:
         
-        Message(char *msg);
+        Message(void *ptr);
 
-        char*  getMessage();
+        void*  getMessage();
 
-        void setMessage(char *msg);
+        void setMessage(void *msg);
 
 };
