@@ -118,8 +118,8 @@ class LCRProcess: public Process {
 
                 for(Process *p : out_nbrs) {
                     
-                    std::cout<<"Sending Leader Declaration to neighbour at index "<<p->getNode()<<"...\n";
-                    std::cout<<"Declaration Message: "<<*leaderDeclaration<<"\n\n";
+                    std::cout<<"Process at node "<<node<<": Sending Leader Declaration to neighbour at index "<<p->getNode()<<"...\n"
+                                <<"Declaration Message: "<<*leaderDeclaration<<"\n\n";
                     void *msg = static_cast<void*>(leaderDeclaration);
                     p->receiveMessage(msg);
 
@@ -134,7 +134,7 @@ class LCRProcess: public Process {
             
             for(Process *p : out_nbrs) {
             
-                    std::cout<<"Sending message "<<*maxSeen<<" to neighbour at index "<<p->getNode()<<"...\n\n";
+                    std::cout<<"Process at node "<<node<<": Sending message "<<*maxSeen<<" to neighbour at index "<<p->getNode()<<"...\n\n";
                     void *msg = static_cast<void*>(maxSeen);
                     p->receiveMessage(msg);
 
@@ -150,13 +150,14 @@ class LCRProcess: public Process {
                 void *msg = inMessages.front();
                 inMessages.pop();
                 LeaderSearch *nbrMsg = static_cast<LeaderSearch*>(msg);
-                std::cout<<"Received message: "<<*nbrMsg<<"\n\n";
+                std::cout<<"Process at node "<<node<<": Received message: "<<*nbrMsg<<"\n\n";
 
                 if(nbrMsg->getMessageType() == DECLARATION) {
 
                     leaderDeclaration = nbrMsg;
                     seenLeader = true;
-                    std::cout<<"Received Leader Declaration from Process with UID: "<<nbrMsg->getUID()<<" located at node "<<nbrMsg->getSenderNode()<<"\n\n";
+                    std::cout<<"Process at node "<<node<<": Received Leader Declaration from Process with UID: "<<nbrMsg->getUID()<<" located at node "
+                                <<nbrMsg->getSenderNode()<<"\n\n";
 
                     return;
 
@@ -169,7 +170,7 @@ class LCRProcess: public Process {
             if(maxInUID > maxUID) {
 
                 maxUID = maxInUID;
-                std::cout<<"Largest seen UID changes to "<<maxUID<<"\n\n";
+                std::cout<<"Process at node "<<node<<": Largest seen UID changes to "<<maxUID<<"\n\n";
 
             }
             
@@ -182,7 +183,7 @@ class LCRProcess: public Process {
             }
             else {
 
-                std::cout<<"Largest seen UID remains "<<maxUID<<"\n\n";
+                std::cout<<"Process at node "<<node<<": Largest seen UID remains "<<maxUID<<"\n\n";
 
             }
 
@@ -192,7 +193,7 @@ class LCRProcess: public Process {
 
 int main() {
 
-    Graph ringGraph;
+    SyncGraph ringGraph;
     int numProcesses = 2;
     for(int i = 0; i < numProcesses; i++) {
 

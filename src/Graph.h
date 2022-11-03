@@ -17,6 +17,14 @@ class Graph {
 
         void connect(int idx1, int idx2);
 
-        virtual void simulate();
+        virtual void simulate() = 0;
+
+};
+
+class SyncGraph: public Graph {
+
+    public:
+    
+        void simulate();
 
 };

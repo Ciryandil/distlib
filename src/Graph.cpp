@@ -34,45 +34,5 @@ void Graph::connect(int idx1, int idx2) {
 
 }
 
-void Graph::simulate() {         
 
-    int activeCount = processes.size();
-    int roundCount = 1;
-    while(activeCount > 0) {
 
-        std::cout<<"Round: "<<roundCount<<"\n\n";
-
-        for(std::map<int, Process*>::iterator itr = processes.begin(); itr != processes.end(); ++itr) {
-
-            Process *p = itr->second;
-            
-            if(!(p->isActive())) {
-            
-                activeCount--;
-                continue;
-            }
-            
-            std::cout<<"Process at node "<<p->getNode()<<" sends messages: \n\n";
-            p->sendMessages(); 
-            
-        }
-
-        for(std::map<int, Process*>::iterator itr = processes.begin(); itr != processes.end(); ++itr) {
-            
-            Process *p = itr->second;
-
-            if(!(p->isActive())) {
-
-                continue;
-
-            }
-
-            std::cout<<"Process at node "<<p->getNode()<<" examines received messages: \n\n";
-            p->transition();
-            
-        }
-
-        roundCount++;
-
-    }
-}

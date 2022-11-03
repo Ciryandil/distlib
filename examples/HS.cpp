@@ -116,6 +116,8 @@ class HSProcess: public Process {
         bool leader;
         bool seenLeader;
         bool phaseChanged;
+        bool leftReceived;
+        bool rightReceived;
         LeaderSearch *leaderDeclaration;
 
     public:
@@ -130,7 +132,8 @@ class HSProcess: public Process {
             this->seenLeader = false;
             this->leaderDeclaration = nullptr;
             this->phaseChanged = true;
-
+            this->leftReceived = false;
+            this->rightReceived = false;
         }
 
         bool isPhaseChanged() {
@@ -145,8 +148,8 @@ class HSProcess: public Process {
 
                 for(Process *p : out_nbrs) {
                     
-                    std::cout<<"Sending Leader Declaration to neighbour at index "<<p->getNode()<<"...\n";
-                    std::cout<<"Declaration Message: "<<*leaderDeclaration<<"\n\n";
+                    std::cout<<"Process at node "<<node<<": Sending Leader Declaration to neighbour at index "<<p->getNode()<<"...\n"
+                                <<"Declaration Message: "<<*leaderDeclaration<<"\n\n";
                     void *msg = static_cast<void*>(leaderDeclaration);
                     p->receiveMessage(msg);
 
@@ -164,14 +167,15 @@ class HSProcess: public Process {
             }
             
 
-            LeaderSearch *maxSeenLeft = new LeaderSearch(maxUID, (1<<phase), node);
-            LeaderSearch *maxSeenRight = new LeaderSearch(maxUID, (1<<phase), node);
+            LeaderSearch *maxSeenLeft = new LeaderSearch(uid, (1<<phase), node);
+            LeaderSearch *maxSeenRight = new LeaderSearch(uid, (1<<phase), node);
             phaseChanged = false;
 
             std::set<Process*>::iterator itr = out_nbrs.begin(); 
             Process *leftP = *itr;
             void *msgL = static_cast<void*>(maxSeenLeft);
-            std::cout<<"Sending message "<<*maxSeenLeft<<" to neighbour at index "<<leftP->getNode()<<"...\n\n";
+            leftReceived = false;
+            std::cout<<"Process at node "<<node<<": Sending message "<<*maxSeenLeft<<" to neighbour at index "<<leftP->getNode()<<"...\n\n";
             leftP->receiveMessage(msgL);
 
             itr++;
@@ -180,9 +184,10 @@ class HSProcess: public Process {
                 return;
 
             Process *rightP = *itr;
-            void *msgR = static_cast<void*>(maxSeenRight);          
+            void *msgR = static_cast<void*>(maxSeenRight);
+            rightReceived = false;          
             rightP->receiveMessage(msgR);
-            std::cout<<"Sending message "<<*maxSeenRight<<" to neighbour at index "<<rightP->getNode()<<"...\n\n";
+            std::cout<<"Process at node "<<node<<": Sending message "<<*maxSeenRight<<" to neighbour at index "<<rightP->getNode()<<"...\n\n";
 
         }
 
@@ -193,8 +198,6 @@ class HSProcess: public Process {
             itr++;
             Process *rightP = *itr;
 
-            bool leftReceived = false, rightReceived = false;
-
             if(itr == in_nbrs.end())
                 rightReceived = true;
 
@@ -203,12 +206,12 @@ class HSProcess: public Process {
                 void *msg = inMessages.front();
                 inMessages.pop();
                 LeaderSearch *nbrMsg = static_cast<LeaderSearch*>(msg);
-                std::cout<<"Received message: "<<*nbrMsg<<"\n\n";
+                std::cout<<"Process at node "<<node<<": Received message: "<<*nbrMsg<<"\n\n";
                 if(nbrMsg->getMessageType() == DECLARATION) {
 
                     leaderDeclaration = nbrMsg;
                     seenLeader = true;
-                    std::cout<<"Received Leader Declaration from Process with UID: "<<nbrMsg->getUID()<<
+                    std::cout<<"Process at node "<<node<<": Received Leader Declaration from Process with UID: "<<nbrMsg->getUID()<<
                                 " located at node "<<nbrMsg->getSenderNode()<<"\n\n";
 
                     return;
@@ -281,68 +284,18 @@ class HSProcess: public Process {
 
                 phase++;
                 phaseChanged = true; 
-                std::cout<<"Process at node "<<node<<" moves to phase "<<phase<<"\n\n";               
+                std::cout<<"Process at node "<<node<<" moves to phase "<<phase<<"\n\n";
+              
 
             }
 
         }
-
-};
-
-class HSGraph: public Graph {
-
-public:
-    void simulate() override {
-        
-        int activeCount = processes.size();
-        int roundCount = 1;
-        while(activeCount > 0) {
-
-            std::cout<<"Round: "<<roundCount<<"\n\n";
-
-            for(std::map<int, Process*>::iterator itr = processes.begin(); itr != processes.end(); ++itr) {
-
-                Process *p = itr->second;
-                
-                if(!(p->isActive())) {
-                
-                    activeCount--;
-                    continue;
-                }
-                
-                std::cout<<"Process at node "<<p->getNode()<<" sends messages: \n\n";
-                p->sendMessages(); 
-                
-            }
-
-            for(std::map<int, Process*>::iterator itr = processes.begin(); itr != processes.end(); ++itr) {
-                
-                Process *p = itr->second;
-
-                if(!(p->isActive())) {
-
-                    continue;
-
-                }
-
-                std::cout<<"Process at node "<<p->getNode()<<" examines received messages: \n\n";
-                p->transition();
-                //p->clearBuffer(); 
-                
-            }
-
-            roundCount++;
-            // if(roundCount == 10)
-            //     break;
-
-        }
-    }
 
 };
 
 int main() {
 
-    HSGraph ringGraph;
+    SyncGraph ringGraph;
     int numProcesses = 3;
     for(int i = 0; i < numProcesses; i++) {
 
